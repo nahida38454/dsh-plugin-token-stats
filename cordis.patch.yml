@@ -1,0 +1,19 @@
+- insert:
+    - id: token-stats
+      name: dsh-plugin-token-stats
+      # Token prices per million tokens; the currency symbol prefixes the amount.
+      # A row override in the profile patch layer replaces this whole config,
+      # so repeat every field when you change one.
+      config:
+        currency: '¥'
+        cacheMissPerMillion: 2
+        cacheHitPerMillion: 0.2
+        outputPerMillion: 3
+        cacheWritePerMillion: 0
+        # Claude Code data roots, tried in order. Leave empty for the built-in
+        # fallback (`~/.claude/cc-haha`). A machine whose Claude Code desktop app
+        # writes its index next to the workspace rather than under the home
+        # directory has to name that root explicitly here, e.g.
+        #   claudeCodeRoots:
+        #     - 'C:/path/to/cc-haha'
+        claudeCodeRoots: []

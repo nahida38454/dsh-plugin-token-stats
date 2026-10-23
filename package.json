@@ -1,0 +1,35 @@
+{
+  "name": "dsh-plugin-token-stats",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Token usage totals for every DSH session plus Claude Code usage, in a sidebar panel and a per-session header badge.",
+  "main": "./index.js",
+  "license": "MIT",
+  "keywords": ["dsh", "dsh-plugin", "deepseek-harness", "tokens", "usage", "cost"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nahida38454/dsh-plugin-token-stats.git"
+  },
+  "homepage": "https://github.com/nahida38454/dsh-plugin-token-stats#readme",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./claude-code": "./claude-code.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": ["index.js", "client.js", "claude-code.js", "cordis.patch.yml", "locale/*.json", "icon.svg", "README.md", "LICENSE"],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}

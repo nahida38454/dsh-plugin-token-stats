@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Token Stats",
+    "description": "Totals the token usage recorded in every DSH session log: an all-time total, live sessions, and a per-session ranking in a sidebar panel, plus a per-session counter in the conversation header."
+  }
+}

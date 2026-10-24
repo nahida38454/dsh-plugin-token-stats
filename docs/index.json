@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "title": {
+    "en": "DSH plugins by nahida38454",
+    "zh": "北冥的鱼的 DSH 插件"
+  },
+  "description": {
+    "en": "Community DSH bundles published from github.com/nahida38454.",
+    "zh": "由 github.com/nahida38454 发布的 DSH 插件合集。"
+  },
+  "metadata": {
+    "categories": {
+      "observability": {
+        "title": { "en": "Observability", "zh": "可观测性" }
+      }
+    },
+    "labels": {
+      "tokens": { "title": { "en": "Tokens", "zh": "Token 用量" } },
+      "cost": { "title": { "en": "Cost", "zh": "费用" } }
+    }
+  },
+  "plugins": [
+    {
+      "name": "dsh-plugin-token-stats",
+      "title": {
+        "en": "Token Stats",
+        "zh": "Token 总量统计"
+      },
+      "description": {
+        "en": "Totals the token usage recorded in every DSH session log: an all-time total, live sessions, a per-session ranking in a sidebar panel, plus a per-session counter in the conversation header. Claude Code usage is folded in when its index is present.",
+        "zh": "汇总所有 DSH 会话日志里记录的真实 Token 消耗：侧边栏面板显示全站累计、活跃会话与按会话排行，对话头部另外显示当前会话的实时用量。检测到 Claude Code 索引时一并计入。"
+      },
+      "icon": "icons/token-stats.svg",
+      "author": "nahida38454",
+      "homepage": "https://github.com/nahida38454/dsh-plugin-token-stats",
+      "repository": {
+        "url": "https://github.com/nahida38454/dsh-plugin-token-stats"
+      },
+      "metadata": {
+        "category": "observability",
+        "labels": ["tokens", "cost"]
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "publishTimestamp": 1792814400,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/nahida38454/dsh-plugin-token-stats",
+            "commit": "0b107e5f3c1541a912473cdb05e54d987ea9e85d"
+          }
+        }
+      ]
+    }
+  ]
+}

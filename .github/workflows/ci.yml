@@ -118,6 +118,49 @@ jobs:
           console.log("locale keys aligned (" + a.length + " keys)");
           '
 
+      - name: Validate the plugin market index
+        run: |
+          test -f docs/index.json || { echo "no docs/index.json, skipping"; exit 0; }
+          node -e '
+          const fs = require("node:fs");
+          const fail = (m) => { console.error("FAIL: " + m); process.exit(1); };
+          const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          const idx = JSON.parse(fs.readFileSync("docs/index.json", "utf8"));
+
+          if (idx.format !== 1) fail("format must be 1");
+          if (!Array.isArray(idx.plugins) || idx.plugins.length === 0) fail("plugins[] required");
+          const loc = (v) => typeof v === "string" || (v && typeof v === "object" && typeof v.en === "string");
+
+          for (const p of idx.plugins) {
+            if (!p.name) fail("plugin without a name");
+            if (!loc(p.title)) fail(p.name + ": title must be LocalizedText containing en");
+            if (p.description && !loc(p.description)) fail(p.name + ": description must be LocalizedText");
+            if (!Array.isArray(p.versions) || p.versions.length === 0) fail(p.name + ": versions[] required");
+
+            for (const v of p.versions) {
+              if (!/^\d+\.\d+\.\d+$/.test(v.version)) fail(p.name + ": not exact semver: " + v.version);
+              if (typeof v.publishTimestamp !== "number" || v.publishTimestamp < 1e9) {
+                fail(p.name + "@" + v.version + ": publishTimestamp must be unix seconds");
+              }
+              const s = v.source || {};
+              if (s.type !== "git" && s.type !== "npm") fail(p.name + ": source.type must be git or npm");
+              if (s.type === "git") {
+                if (!/^https:\/\//.test(s.url)) fail(p.name + ": git source url must be https");
+                if (!/^[0-9a-f]{40}$/.test(s.commit)) fail(p.name + ": git source needs a full 40-hex commit");
+              }
+            }
+
+            // The index must not advertise a version the package does not have.
+            if (p.name === pkg.name) {
+              const listed = p.versions.map((v) => v.version);
+              if (!listed.includes(pkg.version)) {
+                fail(pkg.name + " " + pkg.version + " is not in the index (has: " + listed.join(", ") + ")");
+              }
+            }
+          }
+          console.log("docs/index.json valid | plugins: " + idx.plugins.length);
+          '
+
       - name: Check every shipped file exists and is listed in files[]
         run: |
           node -e '

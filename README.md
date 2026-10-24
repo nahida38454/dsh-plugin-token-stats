@@ -4,6 +4,13 @@ DSH（DeepSeek Harness）的 Token 用量统计插件。把每个会话日志里
 
 同时支持把 **Claude Code**（及其 `cc-haha` 桌面版）的用量并进同一份统计。
 
+![侧边栏面板](docs/screenshots/panel.png)
+
+![对话头部徽章](docs/screenshots/badge.png)
+
+> 截图占位：把面板与徽章的截图放到 `docs/screenshots/` 下，文件名分别为 `panel.png`、`badge.png`。
+> 未提供图片时上面两行会显示为破图，提交前请补上或删掉这两行。
+
 ## 功能
 
 - **侧边栏面板**：全站累计 tokens / 请求数 / 会话数，输入、输出、缓存读、缓存写、推理的分项，按 provider 与模型的分布，以及按会话的用量排行。
@@ -37,6 +44,24 @@ DSH 从 GitHub 安装时拉的是**源码**，不会执行 `build`。本包是�
 ```bash
 dsh plugin --profile <你的profile名> add github:nahida38454/dsh-plugin-token-stats#<40位commit>
 ```
+
+### 通过插件市场安装
+
+本仓库同时充当一个 DSH 插件市场的索引源。在 DSH 的「插件市场」页打开「管理索引源…」，填入：
+
+https://nahida38454.github.io/dsh-plugin-token-stats/index.json
+
+之后在「发现」页即可搜到本插件并安装。索引文件是 `docs/index.json`，由 GitHub Pages 从 `/docs` 目录发布。
+
+> 索引里每个版本都写死了 40 位 commit SHA，所以**发新版本时要同时更新 `docs/index.json`**：追加一条 `versions` 记录，填新的 `version`、`publishTimestamp`（Unix 秒）与 commit。CI 会校验索引里的版本号与 `package.json` 一致。
+
+## 兼容性
+
+| DSH | 状态 |
+|---|---|
+| 0.2.x | 已验证（开发环境） |
+
+未声明 `engines.dsh`，因此 DSH 会按 `@deepseek-ai/dsh*` 的 peer 依赖范围判断兼容性。
 
 ## 配置
 

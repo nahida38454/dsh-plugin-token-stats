@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify package (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.x', '24.x']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax-check every source file
+        run: |
+          for file in index.js client.js claude-code.js; do
+            node --check "$file"
+            echo "ok: $file"
+          done
+
+      # client.js is a browser module wrapped in __ModuleLoader__.load({...}),
+      # so it only checks out once parsed as classic script — that is what
+      # `node --check` above already did.
+
+      - name: Validate the bundle manifest
+        run: |
+          node -e '
+          const fs = require("node:fs");
+          const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          const fail = (msg) => { console.error("FAIL: " + msg); process.exit(1); };
+
+          if (pkg.dsh?.bundle?.patch !== "./cordis.patch.yml") fail("dsh.bundle.patch must point at ./cordis.patch.yml");
+          for (const f of ["index.js", "client.js", "claude-code.js", "cordis.patch.yml", "icon.svg"]) {
+            if (!fs.existsSync(f)) fail("missing file: " + f);
+            if (!pkg.files?.includes(f) && !f.endsWith(".json")) {
+              if (!(pkg.files ?? []).some((p) => p.endsWith("*.json") && f.endsWith(".json"))) {
+                fail("files[] does not ship: " + f);
+              }
+            }
+          }
+          for (const key of Object.keys(pkg.exports ?? {})) {
+            const target = pkg.exports[key];
+            if (typeof target !== "string") continue;
+            const local = target.replace(/^\.\//, "");
+            if (local.includes("*")) continue;
+            if (!fs.existsSync(local)) fail("exports[" + key + "] points at missing " + local);
+          }
+          console.log("package.json ok: " + pkg.name + "@" + pkg.version);
+          '
+
+      - name: Check the patch YAML references the package name
+        run: |
+          node -e '
+          const fs = require("node:fs");
+          const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          const yaml = fs.readFileSync("cordis.patch.yml", "utf8");
+          const nameRows = [...yaml.matchAll(/^\s*name:\s*[\x27"]?([^"\x27\n]+)[\x27"]?\s*$/gm)].map((m) => m[1].trim());
+          if (nameRows.length === 0) { console.error("FAIL: no name: rows in cordis.patch.yml"); process.exit(1); }
+          for (const row of nameRows) {
+            // Patch rows may reference subpaths (pkg/startup); compare the root.
+            const root = row.split("/")[0];
+            if (root !== pkg.name) {
+              console.error("FAIL: cordis.patch.yml row names " + root + ", package is " + pkg.name);
+              process.exit(1);
+            }
+          }
+          console.log("patch rows match package name: " + pkg.name);
+          '
+
+      - name: Check the module loads and exports the expected surface
+        run: |
+          node --input-type=module -e '
+          const mod = await import("./index.js");
+          const fail = (m) => { console.error("FAIL: " + m); process.exit(1); };
+          if (typeof mod.apply !== "function") fail("index.js must export apply()");
+          if (!Array.isArray(mod.inject)) fail("index.js must export inject[]");
+          console.log("index.js exports:", Object.keys(mod).join(", "));
+          console.log("inject:", JSON.stringify(mod.inject));
+          '
+
+      - name: Check the locale files parse and cover the same keys
+        run: |
+          node -e '
+          const fs = require("node:fs");
+          const read = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
+          const en = read("locale/en.json");
+          const zh = read("locale/zh.json");
+          const keys = (o, pre = "") => Object.entries(o).flatMap(([k, v]) =>
+            v && typeof v === "object" ? keys(v, pre + k + ".") : [pre + k]);
+          const a = keys(en).sort();
+          const b = keys(zh).sort();
+          const only = (x, y) => x.filter((k) => !y.includes(k));
+          const missEn = only(b, a);
+          const missZh = only(a, b);
+          if (missEn.length || missZh.length) {
+            console.error("FAIL: locale keys differ");
+            if (missEn.length) console.error("  zh-only:", missEn.join(", "));
+            if (missZh.length) console.error("  en-only:", missZh.join(", "));
+            process.exit(1);
+          }
+          console.log("locale keys aligned (" + a.length + " keys)");
+          '
+
+      - name: Check every shipped file exists and is listed in files[]
+        run: |
+          node -e '
+          const fs = require("node:fs");
+          const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          const required = ["index.js", "client.js", "claude-code.js", "cordis.patch.yml", "locale/en.json", "locale/zh.json", "icon.svg"];
+          const fail = (m) => { console.error("FAIL: " + m); process.exit(1); };
+
+          for (const f of required) {
+            if (!fs.existsSync(f)) fail("missing on disk: " + f);
+            const listed = pkg.files.includes(f) ||
+              (f.endsWith(".json") && pkg.files.some((p) => p.endsWith("*.json")));
+            if (!listed) fail("not covered by files[]: " + f);
+          }
+          console.log("files[] covers all shipped files: " + required.length);
+          '
